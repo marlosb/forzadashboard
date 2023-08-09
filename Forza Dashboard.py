@@ -1,7 +1,4 @@
-#!/usr/env/python
-# -*- coding: utf-8 -*-
 '''
-
 Copyright (c) 2022 Chris Faig
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,32 +20,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-
-
-
-
-
 import json
 import socket
 from struct import unpack
 
 class ForzaDataPacket:
- 
+    '''Class to handle Forza data packets.'''
+    # class attributes
     sled_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiii'
-
     dash_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbb'
     
-# '<' é usado para especificar a ordem dos bytes 'little-endian'. Isso significa que o byte de menor valor é armazenado no endereço de memória mais baixo.
-# 'i' e 'I' são usados para especificar um número inteiro com sinal e sem sinal, respectivamente. Ambos são de 4 bytes (ou 32 bits).
-# 'f' é usado para especificar um número de ponto flutuante de precisão simples de 4 bytes (ou 32 bits).
-# 'H' é usado para especificar um número inteiro sem sinal de 2 bytes (ou 16 bits).
-# 'B' e 'b' são usados para especificar um número inteiro sem sinal e com sinal, respectivamente, de 1 byte (ou 8 bits).
-# Então, por exemplo, o formato 'sled_format' inicia com <iI, o que significa que os dados começam com um número inteiro de 4 bytes (com sinal), seguido por um número inteiro de 4 bytes (sem sinal).
-# Depois disso, vêm 63 'f's, o que significa que os próximos 63 campos são números de ponto flutuante de precisão simples de 4 bytes.
-# Em seguida, existem quatro 'i's, o que significa que os próximos quatro campos são números inteiros de 4 bytes (com sinal).
-# No caso do 'dash_format', os campos adicionais após os 'i's são uma combinação de números de ponto flutuante, números inteiros e bytes, conforme especificado pelos caracteres de formatação.
-
-
+    # '<' é usado para especificar a ordem dos bytes 'little-endian'. Isso significa que o byte de menor valor é armazenado no endereço de memória mais baixo.
+    # 'i' e 'I' são usados para especificar um número inteiro com sinal e sem sinal, respectivamente. Ambos são de 4 bytes (ou 32 bits).
+    # 'f' é usado para especificar um número de ponto flutuante de precisão simples de 4 bytes (ou 32 bits).
+    # 'H' é usado para especificar um número inteiro sem sinal de 2 bytes (ou 16 bits).
+    # 'B' e 'b' são usados para especificar um número inteiro sem sinal e com sinal, respectivamente, de 1 byte (ou 8 bits).
+    # Então, por exemplo, o formato 'sled_format' inicia com <iI, o que significa que os dados começam com um número inteiro de 4 bytes (com sinal), seguido por um número inteiro de 4 bytes (sem sinal).
+    # Depois disso, vêm 63 'f's, o que significa que os próximos 63 campos são números de ponto flutuante de precisão simples de 4 bytes.
+    # Em seguida, existem quatro 'i's, o que significa que os próximos quatro campos são números inteiros de 4 bytes (com sinal).
+    # No caso do 'dash_format', os campos adicionais após os 'i's são uma combinação de números de ponto flutuante, números inteiros e bytes, conforme especificado pelos caracteres de formatação.
 
     sled_props = [
         'is_race_on', 'timestamp_ms',
@@ -76,8 +66,7 @@ class ForzaDataPacket:
         'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
         'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
         'car_ordinal', 'car_class', 'car_performance_index',
-        'drivetrain_type', 'num_cylinders'
-    ]
+        'drivetrain_type', 'num_cylinders']
 
     dash_props = ['position_x', 'position_y', 'position_z',
                   'speed', 'power', 'torque',
@@ -91,9 +80,7 @@ class ForzaDataPacket:
                   'gear', 'steer',
                   'norm_driving_line', 'norm_ai_brake_diff']
     
-    
-    # Método de inicialização
-    def __init__(self, data, packet_format='dash'):
+    def __init__(self, data: bytearray, packet_format: str = 'dash') -> None:
         self.packet_format = packet_format
         if packet_format == 'sled':
             for prop_name, prop_value in zip(self.sled_props, unpack(self.sled_format, data)):
@@ -103,28 +90,21 @@ class ForzaDataPacket:
                 setattr(self, prop_name, prop_value)
 
     # Método para converter as propriedades do pacote de dados em formato JSON
-    def to_json(self):
+    def to_json(self) -> str:
         if self.packet_format == 'sled':
             return json.dumps({prop_name: getattr(self, prop_name) for prop_name in self.sled_props})
         return json.dumps({prop_name: getattr(self, prop_name) for prop_name in self.sled_props + self.dash_props})
 
-# Função para ouvir os pacotes UDP e imprimir os dados de velocidade
-def dump_stream(port, packet_format='dash'):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_socket.bind(('', port))
-    while True:
-        message, address = server_socket.recvfrom(1024)
-        fdp = ForzaDataPacket(message, packet_format=packet_format)
-        print(fdp.to_json())  # Imprime as propriedades do pacote de dados em formato JSON
-
-
 class ForzaDataReader:
-    def __init__(self, ip="0.0.0.0", port=1024, data_format=ForzaDataPacket.sled_format):
+    def __init__(self, 
+                 ip: str = "0.0.0.0", 
+                 port: int = 1024, 
+                 data_format: str = ForzaDataPacket.sled_format) -> None:
         self.ip = ip
         self.port = port
         self.data_format = data_format
 
-    def start(self):
+    def start(self) -> None:
         # Configurando a conexão com o servidor
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.bind((self.ip, self.port))
@@ -132,19 +112,15 @@ class ForzaDataReader:
         while True:
             # Aguardando por dados do jogo Forza
             data, addr = sock.recvfrom(1024)
-
             # Interpretando os dados recebidos usando a classe ForzaDataPacket
             packet = ForzaDataPacket(data, self.data_format)
-
             # Verificando se a corrida está em andamento
             if packet.is_race_on == 1:
                 # Imprimindo os dados interpretados
                 print(packet.to_json())
 
-
 if __name__ == "__main__":
     # Criando uma nova instância de ForzaDataReader para ler dados do Forza
     reader = ForzaDataReader()
-
     # Iniciando o leitor
     reader.start()
