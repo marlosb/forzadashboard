@@ -20,15 +20,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
+'''
+As I'm delighted with the beautiful and thorough copyright notice above I'm 
+adding this simple and short one to inform that I have modified original code.
+MarlosB 
+'''
+
 import json
 import socket
 from struct import unpack
 
+IP_ADDRESS = '0.0.0.0' # all interfaces from the local machine
+PORT = 6667
+
 class ForzaDataPacket:
-    '''Class to handle Forza data packets.'''
+    '''Class to handle Forza data packets.
+    Args:
+        data (bytearray): Data packet to be parsed.
+    '''
     # class attributes
+    SLED_LENGTH = 232
+    DASH_LENGTH = 311
+    FH4_LENGTH = 324
+
     sled_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiii'
-    dash_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbb'
+    dash_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbBB'
     
     # '<' é usado para especificar a ordem dos bytes 'little-endian'. Isso significa que o byte de menor valor é armazenado no endereço de memória mais baixo.
     # 'i' e 'I' são usados para especificar um número inteiro com sinal e sem sinal, respectivamente. Ambos são de 4 bytes (ou 32 bits).
@@ -80,9 +96,19 @@ class ForzaDataPacket:
                   'gear', 'steer',
                   'norm_driving_line', 'norm_ai_brake_diff']
     
-    def __init__(self, data: bytearray, packet_format: str = 'dash') -> None:
-        self.packet_format = packet_format
-        if packet_format == 'sled':
+    def __init__(self, data: bytearray) -> None:
+        '''Initializes the ForzaDataPacket object.'''
+        # Verificando o comprimento do pacote de dados
+        if len(data) == self.SLED_LENGTH:
+            self.packet_format = 'sled'
+        elif len(data) == self.DASH_LENGTH: 
+            self.packet_format = 'dash'
+        elif len(data) == self.FH4_LENGTH: 
+            self.packet_format = 'fh4'
+            data = data[13:]
+        
+        #print(f'Packet received, lenght is {len(data)}')
+        if self.packet_format == 'sled':
             for prop_name, prop_value in zip(self.sled_props, unpack(self.sled_format, data)):
                 setattr(self, prop_name, prop_value)
         else:
@@ -91,36 +117,50 @@ class ForzaDataPacket:
 
     # Método para converter as propriedades do pacote de dados em formato JSON
     def to_json(self) -> str:
+        '''Converts the ForzaDataPacket object to JSON.'''
         if self.packet_format == 'sled':
             return json.dumps({prop_name: getattr(self, prop_name) for prop_name in self.sled_props})
         return json.dumps({prop_name: getattr(self, prop_name) for prop_name in self.sled_props + self.dash_props})
+    
+    def to_dict(self) -> dict:
+        '''Converts the ForzaDataPacket object to dict.'''
+        if self.packet_format == 'sled':
+            return {prop_name: getattr(self, prop_name) for prop_name in self.sled_props}
+        return {prop_name: getattr(self, prop_name) for prop_name in self.sled_props + self.dash_props}
 
 class ForzaDataReader:
+    '''Class to handle Forza data packets.
+    Args:
+        ip (str) default "0.0.0.0" : IP address to listen on.
+        port (int) default 1024: Port to listen on.
+        filter_rate (int) default 10: Number of packets to skip between each packet processed.
+    '''
+
     def __init__(self, 
                  ip: str = "0.0.0.0", 
-                 port: int = 1024, 
-                 data_format: str = ForzaDataPacket.sled_format) -> None:
+                 port: int = 1024,
+                 filter_rate: int = 10) -> None:
+        '''Initializes the ForzaDataReader object.'''	
         self.ip = ip
         self.port = port
-        self.data_format = data_format
+        self.filter_rate = filter_rate
 
     def start(self) -> None:
+        '''Starts the ForzaDataReader.'''
         # Configurando a conexão com o servidor
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind((self.ip, self.port))
-
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind((self.ip, self.port))
+        
+    def read(self) -> ForzaDataPacket:
+        '''Generator to read, format and output Forza data packets.
+        Yields: ForzaDataPacket object.'''
+        i = 0
         while True:
             # Aguardando por dados do jogo Forza
-            data, addr = sock.recvfrom(1024)
+            data, addr = self.sock.recvfrom(1024)
             # Interpretando os dados recebidos usando a classe ForzaDataPacket
-            packet = ForzaDataPacket(data, self.data_format)
-            # Verificando se a corrida está em andamento
-            if packet.is_race_on == 1:
-                # Imprimindo os dados interpretados
-                print(packet.to_json())
-
-if __name__ == "__main__":
-    # Criando uma nova instância de ForzaDataReader para ler dados do Forza
-    reader = ForzaDataReader()
-    # Iniciando o leitor
-    reader.start()
+            packet = ForzaDataPacket(data)
+            if i == self.filter_rate:
+                i = 0
+                yield packet
+            i = i + 1
