@@ -100,7 +100,6 @@ class ForzaDataPacket:
                  data: bytearray,
                  driver_name: str) -> None:
         '''Initializes the ForzaDataPacket object.'''
-        self.driver_name = driver_name
         # Verificando o comprimento do pacote de dados
         if len(data) == self.SLED_LENGTH:
             self.packet_format = 'sled'
@@ -109,26 +108,29 @@ class ForzaDataPacket:
         elif len(data) == self.FH4_LENGTH: 
             self.packet_format = 'fh4'
             data = data[13:]
-        
+
+        # criando os atributos do objeto e adicionando os valores recebidos
         if self.packet_format == 'sled':
+            self.attrirbutes_list = self.sled_props + ['driver_name']
             for prop_name, prop_value in zip(self.sled_props, unpack(self.sled_format, data)):
                 setattr(self, prop_name, prop_value)
         else:
+            self.attrirbutes_list = self.sled_props + self.dash_props + ['driver_name']
             for prop_name, prop_value in zip(self.sled_props + self.dash_props, unpack(self.dash_format, data)):
                 setattr(self, prop_name, prop_value)
+        # atribuindo valor ao atributo driver_name
+        setattr(self, 'driver_name', driver_name)
+        
+
 
     # Método para converter as propriedades do pacote de dados em formato JSON
     def to_json(self) -> str:
         '''Converts the ForzaDataPacket object to JSON.'''
-        if self.packet_format == 'sled':
-            return json.dumps({prop_name: getattr(self, prop_name) for prop_name in self.sled_props})
-        return json.dumps({prop_name: getattr(self, prop_name) for prop_name in self.sled_props + self.dash_props})
+        return json.dumps(self.to_dict())
     
     def to_dict(self) -> dict:
         '''Converts the ForzaDataPacket object to dict.'''
-        if self.packet_format == 'sled':
-            return {prop_name: getattr(self, prop_name) for prop_name in self.sled_props}
-        return {prop_name: getattr(self, prop_name) for prop_name in self.sled_props + self.dash_props}
+        return {prop_name: getattr(self, prop_name) for prop_name in self.attrirbutes_list}
 
 class ForzaDataReader:
     '''Class to handle Forza data packets.
@@ -164,7 +166,7 @@ class ForzaDataReader:
             data, addr = self.sock.recvfrom(1024)
             # Interpretando os dados recebidos usando a classe ForzaDataPacket
             packet = ForzaDataPacket(data, driver_name = self.driver_name)
-            if i == self.filter_rate:
+            if i == self.filter_rate and packet.is_race_on == 1:
                 i = 0
                 yield packet
             i = i + 1
