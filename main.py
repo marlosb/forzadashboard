@@ -1,6 +1,8 @@
 import asyncio, queue
 import concurrent.futures
 import os
+import random
+import sys
 
 from forza_package import ForzaDataReader
 from producer import Producer
@@ -51,10 +53,12 @@ class AsyncForzaIO:
             if items:
                 await self.producer.send_events(items)
 
-async def main():
+async def main(driver_name: str) -> None:
     print('Starting async loopings')
 
-    reader = ForzaDataReader(ip = IP_ADDRESS, port = PORT)
+    reader = ForzaDataReader(ip = IP_ADDRESS, 
+                             port = PORT, 
+                             driver_name = driver_name)
     producer = Producer(connection_string = CONN_STRING, 
                         eventhub_name = EVENTHUB_NAME)
     forza_io = AsyncForzaIO(reader = reader, producer = producer)
@@ -70,4 +74,10 @@ async def main():
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    if '/name' in sys.argv:
+        driver_name = sys.argv[sys.argv.index('/name') + 1]
+    elif '/n' in sys.argv:
+        driver_name = sys.argv[sys.argv.index('/n') + 1]
+    else:
+        driver_name = f'driver{random.randint(1000, 9999)}'
+    asyncio.run(main(driver_name = driver_name))

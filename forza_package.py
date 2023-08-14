@@ -96,8 +96,11 @@ class ForzaDataPacket:
                   'gear', 'steer',
                   'norm_driving_line', 'norm_ai_brake_diff']
     
-    def __init__(self, data: bytearray) -> None:
+    def __init__(self, 
+                 data: bytearray,
+                 driver_name: str) -> None:
         '''Initializes the ForzaDataPacket object.'''
+        self.driver_name = driver_name
         # Verificando o comprimento do pacote de dados
         if len(data) == self.SLED_LENGTH:
             self.packet_format = 'sled'
@@ -107,7 +110,6 @@ class ForzaDataPacket:
             self.packet_format = 'fh4'
             data = data[13:]
         
-        #print(f'Packet received, lenght is {len(data)}')
         if self.packet_format == 'sled':
             for prop_name, prop_value in zip(self.sled_props, unpack(self.sled_format, data)):
                 setattr(self, prop_name, prop_value)
@@ -137,10 +139,12 @@ class ForzaDataReader:
     '''
 
     def __init__(self, 
+                 driver_name: str,
                  ip: str = "0.0.0.0", 
                  port: int = 1024,
                  filter_rate: int = 10) -> None:
         '''Initializes the ForzaDataReader object.'''	
+        self.driver_name = driver_name
         self.ip = ip
         self.port = port
         self.filter_rate = filter_rate
@@ -159,7 +163,7 @@ class ForzaDataReader:
             # Aguardando por dados do jogo Forza
             data, addr = self.sock.recvfrom(1024)
             # Interpretando os dados recebidos usando a classe ForzaDataPacket
-            packet = ForzaDataPacket(data)
+            packet = ForzaDataPacket(data, driver_name = self.driver_name)
             if i == self.filter_rate:
                 i = 0
                 yield packet
