@@ -16,3 +16,4 @@ Data is read from UDP stream and write to Event Hubs concurrently to avoid perfo
 ```> python main.py /name <driver_name>```
 
 A random driver name will be generated in case it is not provided as argument.
+Default UDP port is 6667.
