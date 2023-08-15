@@ -9,8 +9,8 @@ from producer import Producer
 # define constants
 IP_ADDRESS = '0.0.0.0'
 PORT = 6667
-CONN_STRING = os.environ['EVENTHUB_CONNECTION_STRING']
-EVENTHUB_NAME = os.environ['EVENTHUB_NAME']
+CONN_STRING = os.environ['EVENTHUBS_CONNECTION_STRING']
+EVENTHUB_NAME = os.environ['EVENTHUBS_NAME']
 
 class AsyncForzaIO:
     '''AsyncForzaIO is a class that handles the async reading and writing of
