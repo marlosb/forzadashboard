@@ -1,5 +1,4 @@
 import asyncio, queue
-import concurrent.futures
 import os
 import random
 import sys
@@ -33,9 +32,12 @@ class AsyncForzaIO:
     def _post_init(self) -> None:
         self.reader.start()
 
-    def read_data(self) -> None:
+    def _read_data(self) -> None:
         print('\tStarting read_data() loop')
         [self.queue.put_nowait(i.to_dict()) for i in self.reader.read()]
+    
+    async def read_data(self) -> None:
+        return await asyncio.to_thread(self._read_data)
     
     def _get_all_messages(self) -> list[str]:
         items = []
@@ -53,25 +55,8 @@ class AsyncForzaIO:
             if items:
                 await self.producer.send_events(items)
 
-async def main(driver_name: str) -> None:
-    print('Starting async loopings')
-
-    reader = ForzaDataReader(ip = IP_ADDRESS, 
-                             port = PORT, 
-                             driver_name = driver_name)
-    producer = Producer(connection_string = CONN_STRING, 
-                        eventhub_name = EVENTHUB_NAME)
-    forza_io = AsyncForzaIO(reader = reader, producer = producer)
-
-    future_writes = asyncio.ensure_future(forza_io.write_data())
-
-    pool = concurrent.futures.ThreadPoolExecutor()
-    future_reads = asyncio.get_event_loop().run_in_executor(
-                     pool, forza_io.read_data)
-    
-    done, pending = await asyncio.wait([future_reads],)
-    print("async main() loop exited !")
-
+    async def run(self) -> None:
+        await asyncio.gather(self.read_data(), self.write_data())
 
 if __name__ == '__main__':
     if '/name' in sys.argv:
@@ -80,4 +65,13 @@ if __name__ == '__main__':
         driver_name = sys.argv[sys.argv.index('/n') + 1]
     else:
         driver_name = f'driver{random.randint(1000, 9999)}'
-    asyncio.run(main(driver_name = driver_name))
+    
+    reader = ForzaDataReader(ip = IP_ADDRESS, 
+                             port = PORT, 
+                             driver_name = driver_name)
+    producer = Producer(connection_string = CONN_STRING, 
+                        eventhub_name = EVENTHUB_NAME)
+    
+    forza_io = AsyncForzaIO(reader = reader, producer = producer)
+
+    asyncio.run(forza_io.run())
