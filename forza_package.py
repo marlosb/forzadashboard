@@ -144,7 +144,7 @@ class ForzaDataReader:
                  driver_name: str,
                  ip: str = "0.0.0.0", 
                  port: int = 1024,
-                 filter_rate: int = 10) -> None:
+                 filter_rate: int = 8) -> None:
         '''Initializes the ForzaDataReader object.'''	
         self.driver_name = driver_name
         self.ip = ip
