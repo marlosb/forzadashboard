@@ -20,6 +20,7 @@ class AsyncForzaIO:
         Boths tasks are repeting continuoesly until the program is terminated.
         Income UDP messages are read one by one and put in a queue.
         The queue is then emptied and all messages are sent to EventHub.
+        The run() method is used to start both tasks and is the only one you should call direct.
     '''
     def __init__(self,
                  reader: ForzaDataReader,
@@ -36,7 +37,7 @@ class AsyncForzaIO:
         print('\tStarting read_data() loop')
         [self.queue.put_nowait(i.to_dict()) for i in self.reader.read()]
     
-    async def read_data(self) -> None:
+    async def _read_data_async(self) -> None:
         return await asyncio.to_thread(self._read_data)
     
     def _get_all_messages(self) -> list[str]:
@@ -48,7 +49,7 @@ class AsyncForzaIO:
                 break
         return items
     
-    async def write_data(self) -> None:
+    async def _write_data(self) -> None:
         print('\tStarting write_data() loop')
         while True:
             items = self._get_all_messages()
@@ -56,7 +57,7 @@ class AsyncForzaIO:
                 await self.producer.send_events(items)
 
     async def run(self) -> None:
-        await asyncio.gather(self.read_data(), self.write_data())
+        await asyncio.gather(self._read_data_async(), self._write_data())
 
 if __name__ == '__main__':
     if '/name' in sys.argv:
