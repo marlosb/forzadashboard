@@ -75,4 +75,8 @@ if __name__ == '__main__':
     
     forza_io = AsyncForzaIO(reader = reader, producer = producer)
 
-    asyncio.run(forza_io.run())
+    try:
+        asyncio.run(forza_io.run())
+    except KeyboardInterrupt:
+        print('Program terminated by user')
+        exit()
