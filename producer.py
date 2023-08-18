@@ -1,7 +1,12 @@
 import json
+import logging
 
 from azure.eventhub.aio import EventHubProducerClient
 from azure.eventhub import EventData
+
+from logger import create_logger
+
+logger = create_logger(__name__, logging.DEBUG)
 
 class Producer:
     '''Class to send events to Azure Event Hub'''
@@ -16,6 +21,7 @@ class Producer:
         self.producer = EventHubProducerClient.from_connection_string(
                         conn_str=connection_string,
                         eventhub_name=eventhub_name)
+        logger.debug(f'Producer object created with eventhub_name: {eventhub_name}')
 
     async def prepare_events(self, events_list: list[dict]):
         '''Prepare events to be sent to Azure Event Hub
@@ -25,12 +31,13 @@ class Producer:
             event_data_batch (EventDataBatch): batch of events to be sent to Azure Event Hub
         '''
         async with self.producer:
-            print('Creating batch ot events')
+            logger.info('Creating batch ot events')
             event_data_batch = await self.producer.create_batch()
-            print(f'Adding {len(events_list)} events to batch')
+            logger.info(f'Adding {len(events_list)} events to batch')
             for event in events_list:
                 event_str = json.dumps(event)
                 event_data_batch.add(EventData(event_str))
+        logger.debug(f'batch of {len(events_list)} events created')
         return event_data_batch
 
     async def send_events(self, events_list: list[dict]) -> None:
@@ -42,9 +49,10 @@ class Producer:
         '''
 
         event_data_batch = await self.prepare_events(events_list = events_list)
-        print('sending batch of events to Azure Event Hub')
+        logger.info('sending batch of events to Azure Event Hub')
         async with self.producer:
             await self.producer.send_batch(event_data_batch)
+        logger.debug(f'batch of {len(events_list)} events sent to Azure Event Hub')
 
     def close(self) -> None:
         '''Close connection to Azure Event Hub'''

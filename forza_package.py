@@ -27,8 +27,13 @@ MarlosB
 '''
 
 import json
+import logging
 import socket
 from struct import unpack
+
+from logger import create_logger
+
+logger = create_logger(__name__, logging.DEBUG)
 
 IP_ADDRESS = '0.0.0.0' # all interfaces from the local machine
 PORT = 6667
@@ -108,6 +113,7 @@ class ForzaDataPacket:
         elif len(data) == self.FH4_LENGTH: 
             self.packet_format = 'fh4'
             data = data[13:]
+        logger.debug(f'\t\tForzaDataPacket object created with packet_format: {self.packet_format}')
 
         # criando os atributos do objeto e adicionando os valores recebidos
         if self.packet_format == 'sled':
@@ -120,6 +126,7 @@ class ForzaDataPacket:
                 setattr(self, prop_name, prop_value)
         # atribuindo valor ao atributo driver_name
         setattr(self, 'driver_name', driver_name)
+        logger.debug(f'\t\tall attributes set in ForzaDataPacket object')
         
 
 
@@ -150,12 +157,14 @@ class ForzaDataReader:
         self.ip = ip
         self.port = port
         self.filter_rate = filter_rate
+        logger.debug(f'\tForzaDataReader object created with driver_name: {self.driver_name}')
 
     def start(self) -> None:
         '''Starts the ForzaDataReader.'''
         # Configurando a conexão com o servidor
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.ip, self.port))
+        logger.debug(f'\tForzaDataReader started on {self.ip}:{self.port}')
         
     def read(self) -> ForzaDataPacket:
         '''Generator to read, format and output Forza data packets.
@@ -168,5 +177,6 @@ class ForzaDataReader:
             packet = ForzaDataPacket(data, driver_name = self.driver_name)
             if i == self.filter_rate and packet.is_race_on == 1:
                 i = 0
+                logger.debug(f'\tForzaDataReader.read() yield packet')
                 yield packet
             i = i + 1

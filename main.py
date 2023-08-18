@@ -1,9 +1,11 @@
 import asyncio, queue
+import logging
 import os
 import random
 import sys
 
 from forza_package import ForzaDataReader
+from logger import create_logger
 from producer import Producer
 
 # define constants
@@ -11,6 +13,8 @@ IP_ADDRESS = '0.0.0.0'
 PORT = 6667
 CONN_STRING = os.environ['EVENTHUBS_CONNECTION_STRING']
 EVENTHUB_NAME = os.environ['EVENTHUBS_NAME']
+
+logger = create_logger(__name__, logging.DEBUG)
 
 class AsyncForzaIO:
     '''AsyncForzaIO is a class that handles the async reading and writing of
@@ -28,19 +32,22 @@ class AsyncForzaIO:
         self.reader = reader
         self.producer = producer
         self.queue = queue.Queue()
+        logger.debug('\tAsyncForzaIO object created')
         self._post_init()
     
     def _post_init(self) -> None:
         self.reader.start()
+        logger.debug('\tForzaData.reader started')
 
     def _read_data(self) -> None:
-        print('\tStarting read_data() loop')
+        logger.debug('\tStarting read_data() loop')
         [self.queue.put_nowait(i.to_dict()) for i in self.reader.read()]
     
     async def _read_data_async(self) -> None:
         return await asyncio.to_thread(self._read_data)
     
     def _get_all_messages(self) -> list[str]:
+        logger.debug('\tGetting all messages from queue')
         items = []
         while True:
             try:
@@ -50,7 +57,7 @@ class AsyncForzaIO:
         return items
     
     async def _write_data(self) -> None:
-        print('\tStarting write_data() loop')
+        logger.debug('\tStarting write_data() loop')
         while True:
             items = self._get_all_messages()
             if items:
@@ -58,14 +65,19 @@ class AsyncForzaIO:
 
     async def run(self) -> None:
         await asyncio.gather(self._read_data_async(), self._write_data())
+        logger.debug('\tAsyncForzaIO.run() involked')
 
 if __name__ == '__main__':
+    logger.debug('Starting main function')
     if '/name' in sys.argv:
         driver_name = sys.argv[sys.argv.index('/name') + 1]
+        logger.debug(f'/name argument found, setting driver name to: {driver_name}')
     elif '/n' in sys.argv:
         driver_name = sys.argv[sys.argv.index('/n') + 1]
+        logger.debug(f'/n argument found, setting driver name to: {driver_name}')
     else:
         driver_name = f'driver{random.randint(1000, 9999)}'
+        logger.debug(f'No driver name provided, setting driver name to: {driver_name}')
     
     reader = ForzaDataReader(ip = IP_ADDRESS, 
                              port = PORT, 
@@ -75,8 +87,4 @@ if __name__ == '__main__':
     
     forza_io = AsyncForzaIO(reader = reader, producer = producer)
 
-    try:
-        asyncio.run(forza_io.run())
-    except KeyboardInterrupt:
-        print('Program terminated by user')
-        exit()
+    asyncio.run(forza_io.run())
