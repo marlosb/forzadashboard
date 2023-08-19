@@ -47,13 +47,14 @@ class AsyncForzaIO:
         return await asyncio.to_thread(self._read_data)
     
     def _get_all_messages(self) -> list[str]:
-        logger.debug('\tGetting all messages from queue')
+        logger.debug('\tGetting messages from queue')
         items = []
         while True:
             try:
                 items.append(self.queue.get_nowait())
             except queue.Empty:
                 break
+        logger.debug(f'\tGot {len(items)} messages from queue}')
         return items
     
     async def _write_data(self) -> None:
@@ -61,7 +62,12 @@ class AsyncForzaIO:
         while True:
             items = self._get_all_messages()
             if items:
+                logger.debug(f'\tSending {len(items)} messages to EventHub')
                 await self.producer.send_events(items)
+                logger.debug('\tMessages sent')
+            else:
+                logger.debug('\tNo messages to send, sleeping for 0.5 seconds')
+                await asyncio.sleep(0.5)
 
     async def run(self) -> None:
         await asyncio.gather(self._read_data_async(), self._write_data())

@@ -113,7 +113,6 @@ class ForzaDataPacket:
         elif len(data) == self.FH4_LENGTH: 
             self.packet_format = 'fh4'
             data = data[13:]
-        logger.debug(f'\t\tForzaDataPacket object created with packet_format: {self.packet_format}')
 
         # criando os atributos do objeto e adicionando os valores recebidos
         if self.packet_format == 'sled':
@@ -126,7 +125,6 @@ class ForzaDataPacket:
                 setattr(self, prop_name, prop_value)
         # atribuindo valor ao atributo driver_name
         setattr(self, 'driver_name', driver_name)
-        logger.debug(f'\t\tall attributes set in ForzaDataPacket object')
         
 
 
