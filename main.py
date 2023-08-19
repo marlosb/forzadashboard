@@ -54,7 +54,7 @@ class AsyncForzaIO:
                 items.append(self.queue.get_nowait())
             except queue.Empty:
                 break
-        logger.debug(f'\tGot {len(items)} messages from queue}')
+        logger.debug(f'\tGot {len(items)} messages from queue')
         return items
     
     async def _write_data(self) -> None:
