@@ -48,10 +48,21 @@ class Producer:
             None
         '''
 
-        event_data_batch = await self.prepare_events(events_list = events_list)
         logger.info('sending batch of events to Azure Event Hub')
-        async with self.producer:
+        if len(events_list) > 75:
+            logger.warning(f'batch of {len(events_list)} events is too big. Splitting into 2 batches (recursively)')
+            events_list_overflow = events_list[75:]
+            events_list = events_list[:75]
+            await self.send_events(events_list = events_list_overflow)
+
+        event_data_batch = await self.prepare_events(events_list = events_list)
+        try:
             await self.producer.send_batch(event_data_batch)
+        except Exception as e:
+            logger.error(f'Error sending batch of events to Azure Event Hub: {e}')
+        finally:
+            await self.producer.close()
+
         logger.debug(f'batch of {len(events_list)} events sent to Azure Event Hub')
 
     def close(self) -> None:
