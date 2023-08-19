@@ -177,4 +177,8 @@ class ForzaDataReader:
                 i = 0
                 logger.debug(f'\tForzaDataReader.read() yield packet')
                 yield packet
+            elif i == self.filter_rate and packet.is_race_on == 0:
+                i = 0
+                logger.info('is_race_on is False')
+                yield None
             i = i + 1

@@ -41,7 +41,7 @@ class AsyncForzaIO:
 
     def _read_data(self) -> None:
         logger.debug('\tStarting read_data() loop')
-        [self.queue.put_nowait(i.to_dict()) for i in self.reader.read()]
+        [self.queue.put_nowait(i.to_dict()) for i in self.reader.read() if i]
     
     async def _read_data_async(self) -> None:
         return await asyncio.to_thread(self._read_data)
