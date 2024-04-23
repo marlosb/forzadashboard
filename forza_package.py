@@ -26,6 +26,7 @@ adding this simple and short one to inform that I have modified original code.
 MarlosB 
 '''
 
+from abc import ABC, abstractmethod
 import json
 import logging
 import socket
@@ -38,19 +39,196 @@ logger = create_logger(__name__, logging.DEBUG)
 IP_ADDRESS = '0.0.0.0' # all interfaces from the local machine
 PORT = 6667
 
-class ForzaDataPacket:
-    '''Class to handle Forza data packets.
-    Args:
-        data (bytearray): Data packet to be parsed.
-    '''
-    # class attributes
-    SLED_LENGTH = 232
-    DASH_LENGTH = 311
-    FH4_LENGTH = 324
+class ForzaDataPacket(ABC):
+    '''Abstract class to handle Forza data packets.'''
 
-    sled_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiii'
-    dash_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbBB'
+    def __init__(self, 
+                 data: bytearray,
+                 driver_name: str) -> None:
+        '''Initializes the ForzaDataPacket object.'''
+        # criando os atributos do objeto e adicionando os valores recebidos
+        self.attrirbutes_list = self.props + ['driver_name']
+        for prop_name, prop_value in zip(self.props, unpack(self.format, data)):
+            setattr(self, prop_name, prop_value)
+        # atribuindo valor ao atributo driver_name
+        setattr(self, 'driver_name', driver_name)
+
+    def to_dict(self) -> dict:
+        '''Converts the ForzaDataPacket object to dict.'''
+        return {prop_name: getattr(self, prop_name) for prop_name in self.attrirbutes_list}
     
+    def to_json(self) -> str:
+        '''Converts the ForzaDataPacket object to JSON.'''
+        return json.dumps(self.to_dict())
+
+class Forza7Sled(ForzaDataPacket):
+    '''Class to handle Forza Motorsport 7 Sled data packets.'''
+    
+    def __init__(self, 
+                 data: bytearray,
+                 driver_name: str) -> None:
+        self.props = ['is_race_on', 'timestamp_ms',
+            'engine_max_rpm', 'engine_idle_rpm', 'current_engine_rpm',
+            'acceleration_x', 'acceleration_y', 'acceleration_z',
+            'velocity_x', 'velocity_y', 'velocity_z',
+            'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
+            'yaw', 'pitch', 'roll',
+            'norm_suspension_travel_FL', 'norm_suspension_travel_FR',
+            'norm_suspension_travel_RL', 'norm_suspension_travel_RR',
+            'tire_slip_ratio_FL', 'tire_slip_ratio_FR',
+            'tire_slip_ratio_RL', 'tire_slip_ratio_RR',
+            'wheel_rotation_speed_FL', 'wheel_rotation_speed_FR',
+            'wheel_rotation_speed_RL', 'wheel_rotation_speed_RR',
+            'wheel_on_rumble_strip_FL', 'wheel_on_rumble_strip_FR',
+            'wheel_on_rumble_strip_RL', 'wheel_on_rumble_strip_RR',
+            'wheel_in_puddle_FL', 'wheel_in_puddle_FR',
+            'wheel_in_puddle_RL', 'wheel_in_puddle_RR',
+            'surface_rumble_FL', 'surface_rumble_FR',
+            'surface_rumble_RL', 'surface_rumble_RR',
+            'tire_slip_angle_FL', 'tire_slip_angle_FR',
+            'tire_slip_angle_RL', 'tire_slip_angle_RR',
+            'tire_combined_slip_FL', 'tire_combined_slip_FR',
+            'tire_combined_slip_RL', 'tire_combined_slip_RR',
+            'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
+            'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
+            'car_ordinal', 'car_class', 'car_performance_index',
+            'drivetrain_type', 'num_cylinders']
+        self.format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiii'
+        super().__init__(data, driver_name)
+
+class Forza7Dash(ForzaDataPacket):
+    '''Class to handle Forza Motorsport 7 Dash data packets.'''
+
+    def __init__(self, 
+                 data: bytearray,
+                 driver_name: str) -> None:
+        self.props = ['is_race_on', 'timestamp_ms',
+            'engine_max_rpm', 'engine_idle_rpm', 'current_engine_rpm',
+            'acceleration_x', 'acceleration_y', 'acceleration_z',
+            'velocity_x', 'velocity_y', 'velocity_z',
+            'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
+            'yaw', 'pitch', 'roll',
+            'norm_suspension_travel_FL', 'norm_suspension_travel_FR',
+            'norm_suspension_travel_RL', 'norm_suspension_travel_RR',
+            'tire_slip_ratio_FL', 'tire_slip_ratio_FR',
+            'tire_slip_ratio_RL', 'tire_slip_ratio_RR',
+            'wheel_rotation_speed_FL', 'wheel_rotation_speed_FR',
+            'wheel_rotation_speed_RL', 'wheel_rotation_speed_RR',
+            'wheel_on_rumble_strip_FL', 'wheel_on_rumble_strip_FR',
+            'wheel_on_rumble_strip_RL', 'wheel_on_rumble_strip_RR',
+            'wheel_in_puddle_FL', 'wheel_in_puddle_FR',
+            'wheel_in_puddle_RL', 'wheel_in_puddle_RR',
+            'surface_rumble_FL', 'surface_rumble_FR',
+            'surface_rumble_RL', 'surface_rumble_RR',
+            'tire_slip_angle_FL', 'tire_slip_angle_FR',
+            'tire_slip_angle_RL', 'tire_slip_angle_RR',
+            'tire_combined_slip_FL', 'tire_combined_slip_FR',
+            'tire_combined_slip_RL', 'tire_combined_slip_RR',
+            'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
+            'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
+            'car_ordinal', 'car_class', 'car_performance_index',
+            'drivetrain_type', 'num_cylinders',
+            'position_x', 'position_y', 'position_z',
+            'speed', 'power', 'torque',
+            'tire_temp_FL', 'tire_temp_FR',
+            'tire_temp_RL', 'tire_temp_RR',
+            'boost', 'fuel', 'dist_traveled',
+            'best_lap_time', 'last_lap_time',
+            'cur_lap_time', 'cur_race_time',
+            'lap_no', 'race_pos',
+            'accel', 'brake', 'clutch', 'handbrake',
+            'gear', 'steer',
+            'norm_driving_line', 'norm_ai_brake_diff']
+        self.format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbBB'
+        super().__init__(data, driver_name)
+
+class Forza2023Sled(ForzaDataPacket):
+    '''Class to handle Forza Motorsport 2023 Sled data packets.'''
+
+    def __init__(self, 
+                 data: bytearray,
+                 driver_name: str) -> None:
+        self.props = [
+            'is_race_on', 'timestamp_ms',
+            'engine_max_rpm', 'engine_idle_rpm', 'current_engine_rpm',
+            'acceleration_x', 'acceleration_y', 'acceleration_z',
+            'velocity_x', 'velocity_y', 'velocity_z',
+            'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
+            'yaw', 'pitch', 'roll',
+            'norm_suspension_travel_FL', 'norm_suspension_travel_FR',
+            'norm_suspension_travel_RL', 'norm_suspension_travel_RR',
+            'tire_slip_ratio_FL', 'tire_slip_ratio_FR',
+            'tire_slip_ratio_RL', 'tire_slip_ratio_RR',
+            'wheel_rotation_speed_FL', 'wheel_rotation_speed_FR',
+            'wheel_rotation_speed_RL', 'wheel_rotation_speed_RR',
+            'wheel_on_rumble_strip_FL', 'wheel_on_rumble_strip_FR',
+            'wheel_on_rumble_strip_RL', 'wheel_on_rumble_strip_RR',
+            'wheel_in_puddle_FL', 'wheel_in_puddle_FR',
+            'wheel_in_puddle_RL', 'wheel_in_puddle_RR',
+            'surface_rumble_FL', 'surface_rumble_FR',
+            'surface_rumble_RL', 'surface_rumble_RR',
+            'tire_slip_angle_FL', 'tire_slip_angle_FR',
+            'tire_slip_angle_RL', 'tire_slip_angle_RR',
+            'tire_combined_slip_FL', 'tire_combined_slip_FR',
+            'tire_combined_slip_RL', 'tire_combined_slip_RR',
+            'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
+            'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
+            'car_ordinal', 'car_class', 'car_performance_index',
+            'drivetrain_type', 'num_cylinders']
+        self.format = '<iIfffffffffffffffffffffffffffiiiiffffffffffffffffffffiiiii'
+        super().__init__(data, driver_name)
+
+class Forza2023Dash(ForzaDataPacket):
+    '''Class to handle Forza Motorsport 2023 Dash data packets.'''
+
+    def __init__(self, 
+                 data: bytearray,
+                 driver_name: str) -> None:
+        self.props = [
+            'is_race_on', 'timestamp_ms',
+            'engine_max_rpm', 'engine_idle_rpm', 'current_engine_rpm',
+            'acceleration_x', 'acceleration_y', 'acceleration_z',
+            'velocity_x', 'velocity_y', 'velocity_z',
+            'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
+            'yaw', 'pitch', 'roll',
+            'norm_suspension_travel_FL', 'norm_suspension_travel_FR',
+            'norm_suspension_travel_RL', 'norm_suspension_travel_RR',
+            'tire_slip_ratio_FL', 'tire_slip_ratio_FR',
+            'tire_slip_ratio_RL', 'tire_slip_ratio_RR',
+            'wheel_rotation_speed_FL', 'wheel_rotation_speed_FR',
+            'wheel_rotation_speed_RL', 'wheel_rotation_speed_RR',
+            'wheel_on_rumble_strip_FL', 'wheel_on_rumble_strip_FR',
+            'wheel_on_rumble_strip_RL', 'wheel_on_rumble_strip_RR',
+            'wheel_in_puddle_FL', 'wheel_in_puddle_FR',
+            'wheel_in_puddle_RL', 'wheel_in_puddle_RR',
+            'surface_rumble_FL', 'surface_rumble_FR',
+            'surface_rumble_RL', 'surface_rumble_RR',
+            'tire_slip_angle_FL', 'tire_slip_angle_FR',
+            'tire_slip_angle_RL', 'tire_slip_angle_RR',
+            'tire_combined_slip_FL', 'tire_combined_slip_FR',
+            'tire_combined_slip_RL', 'tire_combined_slip_RR',
+            'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
+            'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
+            'car_ordinal', 'car_class', 'car_performance_index',
+            'drivetrain_type', 'num_cylinders',
+            'position_x', 'position_y', 'position_z',
+            'speed', 'power', 'torque',
+            'tire_temp_FL', 'tire_temp_FR',
+            'tire_temp_RL', 'tire_temp_RR',
+            'boost', 'fuel', 'dist_traveled',
+            'best_lap_time', 'last_lap_time',
+            'cur_lap_time', 'cur_race_time',
+            'lap_no', 'race_pos',
+            'accel', 'brake', 'clutch', 'handbrake',
+            'gear', 'steer',
+            'norm_driving_line', 'norm_ai_brake_diff',
+            'tire_wear_FL', 'tire_wear_FR',
+            'tire_wear_RL', 'tire_wear_RR',
+            'track_ordinal']
+        self.format = '<iIfffffffffffffffffffffffffffiiiiffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbbffffi'
+        super().__init__(data, driver_name)
+
+    # Descrição do formato dos dados    
     # '<' é usado para especificar a ordem dos bytes 'little-endian'. Isso significa que o byte de menor valor é armazenado no endereço de memória mais baixo.
     # 'i' e 'I' são usados para especificar um número inteiro com sinal e sem sinal, respectivamente. Ambos são de 4 bytes (ou 32 bits).
     # 'f' é usado para especificar um número de ponto flutuante de precisão simples de 4 bytes (ou 32 bits).
@@ -60,82 +238,6 @@ class ForzaDataPacket:
     # Depois disso, vêm 63 'f's, o que significa que os próximos 63 campos são números de ponto flutuante de precisão simples de 4 bytes.
     # Em seguida, existem quatro 'i's, o que significa que os próximos quatro campos são números inteiros de 4 bytes (com sinal).
     # No caso do 'dash_format', os campos adicionais após os 'i's são uma combinação de números de ponto flutuante, números inteiros e bytes, conforme especificado pelos caracteres de formatação.
-
-    sled_props = [
-        'is_race_on', 'timestamp_ms',
-        'engine_max_rpm', 'engine_idle_rpm', 'current_engine_rpm',
-        'acceleration_x', 'acceleration_y', 'acceleration_z',
-        'velocity_x', 'velocity_y', 'velocity_z',
-        'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
-        'yaw', 'pitch', 'roll',
-        'norm_suspension_travel_FL', 'norm_suspension_travel_FR',
-        'norm_suspension_travel_RL', 'norm_suspension_travel_RR',
-        'tire_slip_ratio_FL', 'tire_slip_ratio_FR',
-        'tire_slip_ratio_RL', 'tire_slip_ratio_RR',
-        'wheel_rotation_speed_FL', 'wheel_rotation_speed_FR',
-        'wheel_rotation_speed_RL', 'wheel_rotation_speed_RR',
-        'wheel_on_rumble_strip_FL', 'wheel_on_rumble_strip_FR',
-        'wheel_on_rumble_strip_RL', 'wheel_on_rumble_strip_RR',
-        'wheel_in_puddle_FL', 'wheel_in_puddle_FR',
-        'wheel_in_puddle_RL', 'wheel_in_puddle_RR',
-        'surface_rumble_FL', 'surface_rumble_FR',
-        'surface_rumble_RL', 'surface_rumble_RR',
-        'tire_slip_angle_FL', 'tire_slip_angle_FR',
-        'tire_slip_angle_RL', 'tire_slip_angle_RR',
-        'tire_combined_slip_FL', 'tire_combined_slip_FR',
-        'tire_combined_slip_RL', 'tire_combined_slip_RR',
-        'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
-        'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
-        'car_ordinal', 'car_class', 'car_performance_index',
-        'drivetrain_type', 'num_cylinders']
-
-    dash_props = ['position_x', 'position_y', 'position_z',
-                  'speed', 'power', 'torque',
-                  'tire_temp_FL', 'tire_temp_FR',
-                  'tire_temp_RL', 'tire_temp_RR',
-                  'boost', 'fuel', 'dist_traveled',
-                  'best_lap_time', 'last_lap_time',
-                  'cur_lap_time', 'cur_race_time',
-                  'lap_no', 'race_pos',
-                  'accel', 'brake', 'clutch', 'handbrake',
-                  'gear', 'steer',
-                  'norm_driving_line', 'norm_ai_brake_diff']
-    
-    def __init__(self, 
-                 data: bytearray,
-                 driver_name: str) -> None:
-        '''Initializes the ForzaDataPacket object.'''
-        # Verificando o comprimento do pacote de dados
-        if len(data) == self.SLED_LENGTH:
-            self.packet_format = 'sled'
-        if len(data) == self.DASH_LENGTH: 
-            self.packet_format = 'dash'
-        elif len(data) == self.FH4_LENGTH: 
-            self.packet_format = 'fh4'
-            data = data[13:]
-
-        # criando os atributos do objeto e adicionando os valores recebidos
-        if self.packet_format == 'sled':
-            self.attrirbutes_list = self.sled_props + ['driver_name']
-            for prop_name, prop_value in zip(self.sled_props, unpack(self.sled_format, data)):
-                setattr(self, prop_name, prop_value)
-        else:
-            self.attrirbutes_list = self.sled_props + self.dash_props + ['driver_name']
-            for prop_name, prop_value in zip(self.sled_props + self.dash_props, unpack(self.dash_format, data)):
-                setattr(self, prop_name, prop_value)
-        # atribuindo valor ao atributo driver_name
-        setattr(self, 'driver_name', driver_name)
-        
-
-
-    # Método para converter as propriedades do pacote de dados em formato JSON
-    def to_json(self) -> str:
-        '''Converts the ForzaDataPacket object to JSON.'''
-        return json.dumps(self.to_dict())
-    
-    def to_dict(self) -> dict:
-        '''Converts the ForzaDataPacket object to dict.'''
-        return {prop_name: getattr(self, prop_name) for prop_name in self.attrirbutes_list}
 
 class ForzaDataReader:
     '''Class to handle Forza data packets.
@@ -162,6 +264,10 @@ class ForzaDataReader:
         # Configurando a conexão com o servidor
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.ip, self.port))
+        self.packet_parsers = {232 : Forza7Sled,
+                               311: Forza7Dash,
+                               232: Forza2023Sled,
+                               334: Forza2023Dash}
         logger.debug(f'\tForzaDataReader started on {self.ip}:{self.port}')
         
     def read(self) -> ForzaDataPacket:
