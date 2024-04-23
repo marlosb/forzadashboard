@@ -108,7 +108,7 @@ class ForzaDataPacket:
         # Verificando o comprimento do pacote de dados
         if len(data) == self.SLED_LENGTH:
             self.packet_format = 'sled'
-        elif len(data) == self.DASH_LENGTH: 
+        if len(data) == self.DASH_LENGTH: 
             self.packet_format = 'dash'
         elif len(data) == self.FH4_LENGTH: 
             self.packet_format = 'fh4'
@@ -175,7 +175,7 @@ class ForzaDataReader:
             packet = ForzaDataPacket(data, driver_name = self.driver_name)
             if i == self.filter_rate and packet.is_race_on == 1:
                 i = 0
-                logger.debug(f'\tForzaDataReader.read() yield packet')
+                logger.debug('ForzaDataReader.read() yield packet')
                 yield packet
             elif i == self.filter_rate and packet.is_race_on == 0:
                 i = 0
