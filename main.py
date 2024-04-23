@@ -87,7 +87,8 @@ if __name__ == '__main__':
     
     reader = ForzaDataReader(ip = IP_ADDRESS, 
                              port = PORT, 
-                             driver_name = driver_name)
+                             driver_name = driver_name,
+                             filter_rate = 2)
     producer = Producer(connection_string = CONN_STRING, 
                         eventhub_name = EVENTHUB_NAME)
     
