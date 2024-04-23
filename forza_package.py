@@ -61,41 +61,6 @@ class ForzaDataPacket(ABC):
         '''Converts the ForzaDataPacket object to JSON.'''
         return json.dumps(self.to_dict())
 
-class Forza7Sled(ForzaDataPacket):
-    '''Class to handle Forza Motorsport 7 Sled data packets.'''
-    
-    def __init__(self, 
-                 data: bytearray,
-                 driver_name: str) -> None:
-        self.props = ['is_race_on', 'timestamp_ms',
-            'engine_max_rpm', 'engine_idle_rpm', 'current_engine_rpm',
-            'acceleration_x', 'acceleration_y', 'acceleration_z',
-            'velocity_x', 'velocity_y', 'velocity_z',
-            'angular_velocity_x', 'angular_velocity_y', 'angular_velocity_z',
-            'yaw', 'pitch', 'roll',
-            'norm_suspension_travel_FL', 'norm_suspension_travel_FR',
-            'norm_suspension_travel_RL', 'norm_suspension_travel_RR',
-            'tire_slip_ratio_FL', 'tire_slip_ratio_FR',
-            'tire_slip_ratio_RL', 'tire_slip_ratio_RR',
-            'wheel_rotation_speed_FL', 'wheel_rotation_speed_FR',
-            'wheel_rotation_speed_RL', 'wheel_rotation_speed_RR',
-            'wheel_on_rumble_strip_FL', 'wheel_on_rumble_strip_FR',
-            'wheel_on_rumble_strip_RL', 'wheel_on_rumble_strip_RR',
-            'wheel_in_puddle_FL', 'wheel_in_puddle_FR',
-            'wheel_in_puddle_RL', 'wheel_in_puddle_RR',
-            'surface_rumble_FL', 'surface_rumble_FR',
-            'surface_rumble_RL', 'surface_rumble_RR',
-            'tire_slip_angle_FL', 'tire_slip_angle_FR',
-            'tire_slip_angle_RL', 'tire_slip_angle_RR',
-            'tire_combined_slip_FL', 'tire_combined_slip_FR',
-            'tire_combined_slip_RL', 'tire_combined_slip_RR',
-            'suspension_travel_meters_FL', 'suspension_travel_meters_FR',
-            'suspension_travel_meters_RL', 'suspension_travel_meters_RR',
-            'car_ordinal', 'car_class', 'car_performance_index',
-            'drivetrain_type', 'num_cylinders']
-        self.format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiii'
-        super().__init__(data, driver_name)
-
 class Forza7Dash(ForzaDataPacket):
     '''Class to handle Forza Motorsport 7 Dash data packets.'''
 
@@ -142,7 +107,7 @@ class Forza7Dash(ForzaDataPacket):
         self.format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbBB'
         super().__init__(data, driver_name)
 
-class Forza2023Sled(ForzaDataPacket):
+class ForzaSled(ForzaDataPacket):
     '''Class to handle Forza Motorsport 2023 Sled data packets.'''
 
     def __init__(self, 
@@ -264,9 +229,8 @@ class ForzaDataReader:
         # Configurando a conexão com o servidor
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.ip, self.port))
-        self.packet_parsers = {232 : Forza7Sled,
+        self.packet_parsers = {232 : ForzaSled,
                                311: Forza7Dash,
-                               232: Forza2023Sled,
                                334: Forza2023Dash}
         logger.debug(f'\tForzaDataReader started on {self.ip}:{self.port}')
         
@@ -278,7 +242,9 @@ class ForzaDataReader:
             # Aguardando por dados do jogo Forza
             data, addr = self.sock.recvfrom(1024)
             # Interpretando os dados recebidos usando a classe ForzaDataPacket
-            packet = ForzaDataPacket(data, driver_name = self.driver_name)
+            data_len = len(data)
+            parser = self.packet_parsers[data_len]
+            packet = parser(data, driver_name = self.driver_name)
             if i == self.filter_rate and packet.is_race_on == 1:
                 i = 0
                 logger.debug('ForzaDataReader.read() yield packet')
