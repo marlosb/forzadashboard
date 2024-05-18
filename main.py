@@ -84,14 +84,16 @@ if __name__ == '__main__':
     else:
         driver_name = f'driver{random.randint(1000, 9999)}'
         logger.debug(f'No driver name provided, setting driver name to: {driver_name}')
-    
+    print('Starting Forza Dashboard Gateway...')
     reader = ForzaDataReader(ip = IP_ADDRESS, 
                              port = PORT, 
                              driver_name = driver_name,
                              filter_rate = 2)
+    print('Network listener instaciated sucessfully.')                             
     producer = Producer(connection_string = CONN_STRING, 
                         eventhub_name = EVENTHUB_NAME)
-    
+    print('EventHub producer instaciated sucessfully.')
     forza_io = AsyncForzaIO(reader = reader, producer = producer)
+    print('AsyncForzaIO instaciated sucessfully.\nStarting async loop...')
 
     asyncio.run(forza_io.run())
