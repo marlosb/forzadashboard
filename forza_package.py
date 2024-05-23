@@ -243,6 +243,7 @@ class ForzaDataReader:
             data, addr = self.sock.recvfrom(1024)
             # Interpretando os dados recebidos usando a classe ForzaDataPacket
             data_len = len(data)
+            print(f'data_len: {data_len}')
             parser = self.packet_parsers[data_len]
             packet = parser(data, driver_name = self.driver_name)
             if i == self.filter_rate and packet.is_race_on == 1:
