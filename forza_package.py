@@ -231,7 +231,7 @@ class ForzaDataReader:
         self.sock.bind((self.ip, self.port))
         self.packet_parsers = {232 : ForzaSled,
                                311: Forza7Dash,
-                               334: Forza2023Dash}
+                               331: Forza2023Dash}
         logger.debug(f'\tForzaDataReader started on {self.ip}:{self.port}')
         
     def read(self) -> ForzaDataPacket:
@@ -250,6 +250,7 @@ class ForzaDataReader:
                 logger.error(f'Unknown data packet length: {data_len}')
                 logger.error(f'Packet data: {data}')
                 yield None
+                continue
             packet = parser(data, driver_name = self.driver_name)
             if i == self.filter_rate and packet.is_race_on == 1:
                 i = 0
