@@ -251,6 +251,7 @@ class ForzaDataReader:
                 logger.error(f'Packet data: {data}')
                 yield None
                 continue
+            
             packet = parser(data, driver_name = self.driver_name)
             if i == self.filter_rate and packet.is_race_on == 1:
                 i = 0
